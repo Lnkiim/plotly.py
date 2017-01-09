@@ -33,7 +33,7 @@ _BACKWARDS_COMPAT_CLASS_NAMES = {
     'ErrorZ': {'object_name': 'error_z', 'base_type': dict},
     'Figure': {'object_name': 'figure', 'base_type': dict},
     'Font': {'object_name': 'font', 'base_type': dict},
-    'Frames': {'object_name': 'frames', 'base_type': dict},
+    'Frames': {'object_name': 'frames', 'base_type': list},
     'Heatmap': {'object_name': 'heatmap', 'base_type': dict},
     'Histogram': {'object_name': 'histogram', 'base_type': dict},
     'Histogram2d': {'object_name': 'histogram2d', 'base_type': dict},
@@ -167,6 +167,10 @@ def get_valid_attributes(object_name, parent_object_names=()):
         for key, val in deprecated_attributes.items():
             if key not in GRAPH_REFERENCE['defs']['metaKeys']:
                 valid_attributes.add(key)
+
+    if object_name == 'figure' and parent_object_names:
+        # A frame cannot itself contain a frames array.
+        valid_attributes.remove('frames')
 
     return valid_attributes
 
@@ -410,8 +414,11 @@ def _patch_objects():
                          'attribute_paths': layout_attribute_paths,
                          'additional_attributes': {}}
 
-    figure_attributes = {'layout': {'role': 'object'},
-                         'data': {'role': 'object', '_isLinkedToArray': True}}
+    figure_attributes = {
+        'layout': {'role': 'object'},
+        'data': {'role': 'object', '_isLinkedToArray': True},
+        'frames': {'role': 'object', '_isLinkedToArray': True}
+    }
     OBJECTS['figure'] = {'meta_paths': [],
                          'attribute_paths': [],
                          'additional_attributes': figure_attributes}
@@ -446,6 +453,7 @@ def _get_arrays():
 def _patch_arrays():
     """Adds information on our eventual Data array."""
     ARRAYS['data'] = {'meta_paths': [('traces', )], 'items': list(TRACE_NAMES)}
+    ARRAYS['frames'] = {'meta_paths': [], 'items': ['figure']}
 
 
 def _get_classes():
